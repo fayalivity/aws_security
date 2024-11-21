@@ -14,3 +14,4 @@ export const AZ_LIST = [
     'eu-west-1a',
     'eu-west-1b'
 ];
+export const REGION = 'eu-west-1'
