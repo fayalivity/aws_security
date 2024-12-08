@@ -1,3 +1,7 @@
+<<<<<<< HEAD
 *.terraform*
 *tfstate*
 *key*
+=======
+*.terraform*
+>>>>>>> 9170161 (add terraform)

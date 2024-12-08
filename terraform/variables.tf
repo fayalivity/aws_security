@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 variable "region" {
   type    = string
   default = "us-east-1"
@@ -36,4 +37,20 @@ variable "tag_prefix" {
 variable "public_key_name" {
   type    = string
   default = "lab-key"
+=======
+provider "aws" {  
+}
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "main" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "Main"
+  }
+>>>>>>> 9170161 (add terraform)
 }
