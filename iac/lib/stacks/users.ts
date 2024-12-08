@@ -13,7 +13,7 @@ export class UsersStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const inFile: string = '../data/test_list'
+    const inFile: string = '../data/user_list'
 
     const users: UserRecord[] = this.parseUserFile(inFile);
     
