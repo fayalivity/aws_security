@@ -160,12 +160,12 @@ resource "aws_security_group" "sg_bastion" {
 }
 
 resource "aws_security_group_rule" "ssh_from_anywhere" {
-  security_group_id = aws_security_group.sg_bastion.id
-  type              = "ingress"
-  from_port         = 22
-  to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.sg_bastion.id # Appelle le Security Group créé au dessus
+  type              = "ingress"                        # Ingress, en entrée / Egress, en sortie
+  from_port         = 22                               # Début du range de port (utiliser 0 pour tous les ports)
+  to_port           = 22                               # Fin du range de port (utiliser 0 pour tous les ports)
+  protocol          = "tcp"                            # (protocole TCP ou UDP)
+  cidr_blocks       = ["0.0.0.0/0"]                    # IPs autorisées, peut aussi être un Security Group
 }
 
 resource "aws_security_group_rule" "egree_anywhere_bastion" {
@@ -190,14 +190,17 @@ resource "aws_security_group" "sg_app" {
   }
 }
 
-resource "aws_security_group_rule" "ssh_from_bastion" {
-  security_group_id        = aws_security_group.sg_app.id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.sg_bastion.id
-}
+#############################################################################################################################
+########## Autoriser le Security Group du bastion à se connecter en SSH (22 tcp) au Security Group de l'app server ##########
+#############################################################################################################################
+# resource "aws_security_group_rule" "ssh_from_bastion" {
+#   security_group_id        = # Security Group sur lequel la règle est appliquée (type: id)
+#   type                     = # Ingress, en entrée / Egress, en sortie (type: string)
+#   from_port                = # Début du range de port (utiliser 0 pour tous les ports) (type: number)
+#   to_port                  = # Fin du range de port (utiliser 0 pour tous les ports) (type: number)
+#   protocol                 = # (protocole TCP ou UDP) (type: string)
+#   source_security_group_id = # IPs autorisées, peut aussi être un Security Group (type: id)
+# }
 
 resource "aws_security_group_rule" "http_from_alb" {
   security_group_id        = aws_security_group.sg_app.id
@@ -233,17 +236,28 @@ resource "aws_instance" "bastion" {
     delete_on_termination = true
   }
 
-    provisioner "file" {
-        source = "lab-key"
-        destination = "~/.ssh/authorized_keys"
-
-        connection {
-          type = "ssh"
-          user = "ec2-user"
-          private_key = "~/.ssh/id_rsa"
-          host = "${self.public_dns}"
-        }
+  provisioner "file" {
+    source      = "./lab-key"
+    destination = "/home/ec2-user/.ssh/id_rsa"
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file(var.public_key_name)
+      host        = self.public_ip
     }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod 400 /home/ec2-user/.ssh/id_rsa"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file(var.public_key_name)
+      host        = self.public_ip
+    }
+  }
 
   tags = {
     Name = "${var.tag_prefix}-bastion"
@@ -288,6 +302,12 @@ resource "aws_lb_target_group" "alb_tg" {
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main_vpc.id
+}
+
+resource "aws_lb_target_group_attachment" "attach_app" {
+  target_group_arn = aws_lb_target_group.alb_tg.arn
+  target_id        = aws_instance.app.id
+  port             = 80
 }
 
 resource "aws_lb_listener" "alb_listener" {

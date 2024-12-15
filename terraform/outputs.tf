@@ -9,3 +9,7 @@ output "app_private_ip" {
 output "alb_dns" {
   value = aws_lb.alb.dns_name
 }
+
+output "vpc_id" {
+  value = aws_vpc.main_vpc.id
+}
